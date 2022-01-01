@@ -7,5 +7,4 @@
 	<typeAliases>
 		<typeAlias type="myproject.domain.Board" alias="boardDto"/>
 	</typeAliases>
-
 </configuration>
