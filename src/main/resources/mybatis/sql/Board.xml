@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="myproject.repository.BoardRepository">
+	
+	<resultMap id="getListResultMap" type="myproject.domain.Board">
+		<result column="DEL_YN" property="delYn" typeHandler="myproject.configuration.mybatis.typehandler.StringValueBooleanTypeHandler"/>
+	</resultMap>
+	
+	<!--select id="getList" parameterType="hashMap" resultType="myproject.domain.Board"-->
+	<!--select id="getList" parameterType="myproject.parameter.BoardSearchParameter" resultType="myproject.domain.Board"-->
+	<select id="getList" parameterType="myproject.data.domain.PageRequestParameter" resultMap="getListResultMap">
+	SELECT B.boardSeq,
+	       B.boardType,
+	       B.title,
+	       B.content,
+	       B.regDate,
+	       B.DEL_YN
+	FROM board B
+	<where>
+		<!-- 키워드 검색 -->
+		<if test="@org.apache.commons.lang3.StringUtils@isNotEmpty(parameter.keyword)">
+		AND B.title LIKE CONCAT('%', #{keyword}, '%')
+		</if>
+		<!-- 게시물 종류 -->
+		<if test="@org.apache.commons.lang3.ObjectUtils@isNotEmpty(parameter.boardType)">
+			AND boardType = #{parameter.boardType}
+		</if>
+		<!-- 게시판 종류 배열 검색 -->
+		<if test="@org.apache.commons.lang3.ObjectUtils@isNotEmpty(parameter.boardTypes)">
+			AND B.boardType IN (
+				<foreach collection="boardTypes" item="value" separator=",">
+				#{value}
+				</foreach>
+			)
+		</if>
+	</where>
+	ORDER BY B.regDate DESC
+	LIMIT #{pageRequest.limit}, #{pageRequest.offset}
+	</select>
+
+	<select id="get" parameterType="int" resultType="myproject.domain.Board">
+		SELECT B.boardSeq,
+			   B.boardType,
+			   B.title,
+			   B.content,
+			   B.regDate
+		FROM board B
+		WHERE B.boardSeq = #{boardSeq}
+	</select>
+
+	<insert id="save" parameterType="myproject.parameter.BoardParameter" useGeneratedKeys="true" keyProperty="boardSeq">
+		INSERT INTO board
+		    (
+		     boardType,
+			title,
+		     content,
+		     regDate,
+		     DEL_YN
+			)
+			VALUES
+			(
+			 #{boardType.code},
+			 #{title},
+			 #{content},
+			 NOW(),
+			 #{delYn, typeHandler=myproject.configuration.mybatis.typehandler.StringValueBooleanTypeHandler}
+			)
+	</insert>
+
+	<insert id="saveList" parameterType="map">
+		INSERT INTO board
+		(
+		boardType,
+		title,
+		content,
+		regDate
+		)
+		VALUES
+		<foreach collection="boardList" item="board" separator=",">
+			(
+			#{board.boardType}
+			#{board.title},
+			#{board.content},
+			NOW()
+			)
+		</foreach>
+	</insert>
+
+	<update id="update" parameterType="myproject.domain.Board">
+		UPDATE board
+		SET
+		    boardType = #{boardType.code},
+			title = #{title},
+			content = #{content}
+		WHERE boardSeq = #{boardSeq}
+	</update>
+
+	<delete id="delete" parameterType="int">
+		DELETE FROM board
+		WHERE boardSeq = #{boardSeq}
+	</delete>
+
+	<sql id="getListQuery">
+		<where>
+			<!-- 키워드 검색 -->
+		<if test="@org.apache.commons.lang3.StringUtils@isNotEmpty(parameter.keyword)">
+			AND title LIKE CONCAT('%', #{parameter.keyword}, '%')
+		</if>
+			<!-- 게시물 종류 -->
+			<if test="@org.apache.commons.lang3.ObjectUtils@isNotEmpty(parameter.boardType)">
+				AND boardType = #{parameter.boardType}
+			</if>
+			<!-- 게시판 종류 배열 검색 -->
+			<if test="@org.apache.commons.lang3.ObjectUtils@isNotEmpty(parameter.boardTypes)">
+				AND boardType IN(
+				<foreach collection="parameter.boardTypes" item="value" separator=",">
+					#{value}
+				</foreach>
+				)
+			</if>
+		</where>
+	</sql>
+</mapper>
